@@ -96,12 +96,11 @@
     }
 
     /* --- Select styling to make dropdown readable --- */
-    /* This styles the closed select box and attempts to style options in many browsers */
     select {
       color: var(--select-text);
       background-color: var(--select-bg);
       border: 1px solid rgba(7,16,38,0.12);
-      padding-right: 40px;               /* место под стрелку */
+      padding-right: 40px;
       -webkit-appearance: none;
       -moz-appearance: none;
       appearance: none;
@@ -122,10 +121,8 @@
       outline: none;
       border-color: rgba(56,189,248,0.45);
     }
-    /* Remove native expand in IE/Edge */
     select::-ms-expand { display: none; }
 
-    /* Плейсхолдер и readonly/disabled — явно читаемы */
     ::placeholder { color: rgba(179,197,212,0.5); }
     input[readonly], input[disabled], select[disabled] {
       background: transparent !important;
@@ -133,7 +130,6 @@
       opacity: 1;
     }
 
-    /* Кнопки */
     .btn { border-radius: 999px; padding: 8px 14px; border: 1px solid rgba(255,255,255,0.06); background: rgba(255,255,255,0.02); color: var(--text); cursor:pointer; font-size: 0.95rem; }
     .btn-primary { background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #071026; font-weight:600; border-color: transparent; }
     .btn:hover { filter: brightness(1.05); }
@@ -141,16 +137,14 @@
     .note { color: var(--muted); font-size: 0.92rem; }
     .error { color: var(--danger); font-size: 0.95rem; min-height: 1.1rem; margin-top: 8px; }
 
-    /* Результаты */
     .summary-grid { display:grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap:10px; margin-top: 6px; }
     .metric { background: rgba(255,255,255,0.01); border-radius:10px; padding:10px; border:1px solid rgba(255,255,255,0.03); }
     .metric-label { color: var(--muted-2); font-size: 0.82rem; margin-bottom:6px; }
-    .metric-value { font-size: 1.15rem; font-weight:700; color: var(--text); }
+    .metric-value { font-size: 1.15rem; font-weight:700; color:var(--text); }
 
     .pill { display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:999px; background: rgba(56,189,248,0.06); color: var(--accent); font-size:0.9rem; }
     .pill-dot { width:8px; height:8px; border-radius:999px; background: var(--accent); }
 
-    /* График платежей: фиксированный заголовок + прокручиваемая тело */
     .schedule { margin-top: 16px; border-radius: var(--radius); border:1px solid rgba(255,255,255,0.03); overflow: hidden; display:flex; flex-direction:column; max-height: 420px; background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(0,0,0,0.02)); }
     .schedule-header { display:flex; justify-content:space-between; align-items:center; padding:10px 12px; border-bottom:1px solid rgba(255,255,255,0.03); background: linear-gradient(180deg, rgba(56,189,248,0.03), rgba(0,0,0,0)); color: var(--muted); font-size:0.95rem; }
     .schedule-table-wrapper { overflow:auto; -webkit-overflow-scrolling: touch; flex:1 1 auto; min-height:120px; }
@@ -160,10 +154,9 @@
     tr:nth-child(even) td { background: rgba(255,255,255,0.01); }
     td:first-child, th:first-child, td:nth-child(2), th:nth-child(2) { text-align:center; white-space:nowrap; color: var(--muted-2); }
 
-    /* Мобильный: таблица горизонтальная прокрутка */
     @media (max-width: 640px) {
       .schedule-table-wrapper { min-height: 220px; }
-      table { min-width: 920px; } /* позволить горизонтальную прокрутку на узких экранах */
+      table { min-width: 920px; }
       select { padding: 10px 44px 10px 8px; font-size: 1.02rem; }
     }
   </style>
@@ -172,7 +165,7 @@
   <div class="wrapper">
     <div class="header">
       <div class="title">Ипотечный калькулятор — полный набор программ</div>
-      <div class="subtitle">Выберите программу, измените стоимость — остальные поля подставятся автоматически.</div>
+      <div class="subtitle">Выберите программу, измените стоимость и срок — остальные поля подставятся автоматически.</div>
     </div>
 
     <div class="calculator">
@@ -181,14 +174,13 @@
         <div class="card">
           <div class="card-header">
             <div class="card-title">Исходные данные</div>
-            <div class="card-hint">Меняйте только стоимость (или выберите "Пользовательские").</div>
+            <div class="card-hint">Меняйте стоимость и срок (или выберите "Пользовательские" для полного ручного режима).</div>
           </div>
 
           <div class="fields">
             <div class="field field-wide">
               <label for="product">Программа</label>
               <div class="input-wrapper">
-                <!-- data-customize allows the custom-select fallback to target this select if native options are unreadable -->
                 <select id="product" data-customize="true" aria-label="Выбор ипотечной программы"></select>
               </div>
             </div>
@@ -337,7 +329,7 @@
       const scrollBtn = document.getElementById('scrollToSchedule');
       const productNoteEl = document.getElementById('productNote');
 
-      // --- Products (взято из присланных файлов; при необходимости уточним значения) ---
+      // --- Products ---
       const PRODUCTS = {
         "custom": { name: "Пользовательские", price: 0, downPercent: 20, rate: 18, termYears: 15, note: "Ручной режим — редактируйте все поля." },
 
@@ -428,15 +420,12 @@
         return rate;
       }
 
-      // last-edited state (чтобы не перезаписывать поле, которое пользователь правит)
       let lastEditedDownPayment = null;
       dpPercentEl && dpPercentEl.addEventListener('input', () => lastEditedDownPayment = 'percent');
       dpAmountEl && dpAmountEl.addEventListener('input', () => lastEditedDownPayment = 'amount');
 
-      // --- UI / data binding ---
       function populateProductList() {
         productEl.innerHTML = '';
-        // Пользовательские первыми
         const optCustom = document.createElement('option');
         optCustom.value = 'custom';
         optCustom.textContent = PRODUCTS.custom.name;
@@ -450,7 +439,6 @@
           productEl.appendChild(opt);
         });
 
-        // выбрать первый ненулевой продукт по умолчанию, если есть
         if (productEl.querySelector('option[value="altyn_arman"]')) {
           productEl.value = 'altyn_arman';
         } else {
@@ -462,13 +450,11 @@
         const p = PRODUCTS[key] || PRODUCTS.custom;
         const isCustom = key === 'custom';
 
-        // Price: если пользователь уже ввёл свою цену — не перезаписываем её,
-        // за исключением случая, когда цена пустая
         const existingPrice = parseNumber(priceEl);
         priceEl.value = (existingPrice > 0 && !isCustom) ? existingPrice : (p.price || '');
 
         dpPercentEl.value = p.downPercent != null ? p.downPercent : '';
-        // вычисляем сумму первоначального взноса по текущей цене и проценту
+
         const priceVal = parseNumber(priceEl);
         const computedAmount = (priceVal && p.downPercent) ? Math.round(priceVal * p.downPercent / 100) : '';
         dpAmountEl.value = computedAmount || '';
@@ -476,12 +462,12 @@
         rateEl.value = (p.rate != null && p.rate !== 0) ? p.rate : '';
         termYearsEl.value = p.termYears || '';
 
-        // Для не-custom делаем поля readonly (не disabled), чтобы значения можно было видеть и скрипт мог их менять.
+        // Блокируем только ПВ и ставку, срок всегда свободный
         [dpPercentEl, dpAmountEl, rateEl].forEach(el => {
           if (!el) return;
           if (isCustom) {
             el.removeAttribute('readonly');
-            el.removeAttribute('disabled'); // оставляем enabled, чтобы скрипт мог обновлять value
+            el.removeAttribute('disabled');
             el.style.cursor = '';
           } else {
             el.setAttribute('readonly', 'true');
@@ -489,6 +475,13 @@
             el.style.cursor = 'not-allowed';
           }
         });
+
+        // Срок кредита ВСЕГДА редактируемый
+        if (termYearsEl) {
+          termYearsEl.removeAttribute('readonly');
+          termYearsEl.removeAttribute('disabled');
+          termYearsEl.style.cursor = '';
+        }
 
         productNoteEl.textContent = p.note || '';
         recalc();
@@ -512,13 +505,11 @@
           return;
         }
 
-        // Определяем, редактирует ли пользователь сейчас поле суммы или процента
         const userEditingAmount = (lastEditedDownPayment === 'amount') && (document.activeElement === dpAmountEl);
         const userEditingPercent = (lastEditedDownPayment === 'percent') && (document.activeElement === dpPercentEl);
 
         let downPayment;
         if (dpAmount > 0 && !userEditingAmount && lastEditedDownPayment === 'amount') {
-          // пользователь недавно вводил сумму — используем её
           downPayment = dpAmount;
           dpPercent = price > 0 ? (downPayment / price * 100) : 0;
           if (!userEditingPercent) dpPercentEl.value = dpPercent.toFixed(1);
@@ -526,7 +517,6 @@
           downPayment = dpAmount;
           if (!userEditingPercent) dpPercentEl.value = (price > 0 ? (downPayment / price * 100) : 0).toFixed(1);
         } else {
-          // используем процент как источник истины
           dpPercent = Math.max(0, Math.min(100, dpPercent));
           downPayment = price * dpPercent / 100;
           dpAmount = downPayment;
@@ -555,7 +545,6 @@
           payment = loan * monthlyRate * factor / (factor - 1);
         }
 
-        // построение графика (ограничение 1200 строк — чтобы не зависать)
         const scheduleRows = [];
         let balance = loan;
         let totalInterest = 0;
@@ -582,7 +571,6 @@
           cashFlows.push(-payment);
         }
 
-        // расчёт IRR -> ГЭСВ (приближённо)
         let effAnnualRate = NaN;
         try {
           const irrMonthly = computeIRR(cashFlows, 0.01);
@@ -593,7 +581,6 @@
           effAnnualRate = NaN;
         }
 
-        // вывод
         loanAmountEl.textContent = formatMoney(loan) + ' ₸';
         monthlyPaymentEl.textContent = formatMoney(payment) + ' ₸';
         totalInterestEl.textContent = formatMoney(totalInterest) + ' ₸';
@@ -601,7 +588,6 @@
 
         scheduleInfoEl.textContent = 'Срок: ' + termMonths + ' мес • Платёж: ' + formatMoney(payment) + ' ₸';
 
-        // таблица: наполняем все строки (браузер прокручивает внутри .schedule-table-wrapper)
         const rowsHtml = scheduleRows.map(row => {
           const d = row.date;
           const dateStr = d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -617,7 +603,6 @@
         scheduleBodyEl.innerHTML = rowsHtml;
       }
 
-      // обработчики
       function attachHandlers() {
         productEl.addEventListener('change', () => applyProduct(productEl.value));
         [priceEl, dpPercentEl, dpAmountEl, rateEl, termYearsEl, startDateEl].forEach(el => {
@@ -645,24 +630,19 @@
         });
       }
 
-      // init
       populateProductList();
       attachHandlers();
       applyProduct(productEl.value || 'custom');
       recalc();
 
-      // make PRODUCTS editable from консоли при необходимости
       window.__PRODUCTS = PRODUCTS;
     })();
   </script>
 
-  <!-- Custom select fallback (applies only if native options are unreadable on the user's platform).
-       It looks for select[data-customize="true"] and replaces it with a fully stylable dropdown.
-       Inclusion is optional — native select will be used when possible. -->
+  <!-- Custom select fallback -->
   <script>
     (function () {
       function nativeOptionsReadable() {
-        // Heuristic: create a temporary select/option, check computed color/background on option.
         try {
           const s = document.createElement('select');
           s.style.position = 'fixed';
@@ -671,20 +651,14 @@
           o.textContent = 'Тест';
           s.appendChild(o);
           document.body.appendChild(s);
-          // try to open the options by focusing — we can't open programmatically reliably, but we can read computed styles
           const cs = window.getComputedStyle(o);
           const color = cs && cs.color ? cs.color : '';
-          const bg = cs && cs.backgroundColor ? cs.backgroundColor : '';
           document.body.removeChild(s);
-          // If option color is non-empty and not fully transparent, we assume native rendering will be readable
           if (color && color !== 'transparent') return true;
-        } catch (e) {
-          // ignore
-        }
+        } catch (e) {}
         return false;
       }
 
-      // If native options are likely readable, don't replace
       if (nativeOptionsReadable()) return;
 
       function makeCustom(select) {
