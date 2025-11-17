@@ -477,7 +477,7 @@
         termYearsEl.value = p.termYears || '';
 
         // Для не-custom делаем поля readonly (не disabled), чтобы значения можно было видеть и скрипт мог их менять.
-        [dpPercentEl, dpAmountEl, rateEl, termYearsEl].forEach(el => {
+        [dpPercentEl, dpAmountEl, rateEl].forEach(el => {
           if (!el) return;
           if (isCustom) {
             el.removeAttribute('readonly');
