@@ -1,0 +1,771 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <title>Ипотечный калькулятор — полный набор программ</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    :root{
+      --bg: #0b1220;
+      --panel: #071026;
+      --card-gradient-a: rgba(18,40,66,0.65);
+      --card-gradient-b: rgba(2,6,23,0.95);
+      --accent: #38bdf8;
+      --accent-2: #22c55e;
+      --text: #e6eef6;       /* основной читаемый текст (светло-голубой) */
+      --muted: #9aa6b8;      /* вспомогательный текст */
+      --muted-2: #c3d1df;
+      --danger: #ff7a7a;
+      --input-bg: rgba(255,255,255,0.03);
+      --input-border: rgba(255,255,255,0.06);
+      --radius: 14px;
+      --select-text: #071026; /* темный текст для опций select */
+      --select-bg: #f6fbff;   /* светлый фон select для читабельности */
+    }
+
+    /* Базовые размеры для лучшей читабельности */
+    html { font-size: 16px; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      background: radial-gradient(circle at top left, #071226 0%, var(--bg) 60%);
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+      padding: 28px;
+    }
+
+    .wrapper { width: 100%; max-width: 1200px; }
+
+    .header { margin-bottom: 18px; }
+    .title { font-weight: 700; font-size: 1.5rem; margin-bottom: 6px; color: var(--text); }
+    .subtitle { color: var(--muted); font-size: 0.95rem; }
+
+    .calculator {
+      background: linear-gradient(180deg, var(--card-gradient-a), var(--card-gradient-b));
+      border-radius: calc(var(--radius) + 6px);
+      padding: 18px;
+      border: 1px solid rgba(255,255,255,0.04);
+      box-shadow: 0 12px 40px rgba(3,8,20,0.6);
+    }
+
+    .grid { display: grid; gap: 18px; }
+    @media (min-width: 980px) {
+      .grid { grid-template-columns: 1fr 460px; align-items: start; }
+    }
+
+    .card {
+      background: linear-gradient(135deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border-radius: var(--radius);
+      padding: 14px;
+      border: 1px solid var(--input-border);
+    }
+
+    .card .card-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+    .card-title { font-size:1.05rem; font-weight:600; color:var(--text); }
+    .card-hint { font-size:0.88rem; color:var(--muted); }
+
+    .fields { display:grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .field { display:flex; flex-direction:column; gap:6px; }
+    .field-wide { grid-column: 1 / -1; }
+
+    label { color: var(--muted-2); font-size: 0.92rem; }
+
+    .input-wrapper {
+      display:flex; align-items:center; gap:8px;
+      background: var(--input-bg);
+      border-radius: 999px;
+      padding: 8px 12px;
+      border: 1px solid var(--input-border);
+      transition: box-shadow 160ms ease, border-color 160ms ease;
+    }
+    .input-wrapper:focus-within { box-shadow: 0 0 0 3px rgba(56,189,248,0.06); border-color: rgba(56,189,248,0.35); }
+
+    input[type="number"], input[type="date"], select {
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text);
+      font-size: 1rem;
+      width: 100%;
+      -moz-appearance: textfield;
+      appearance: none;
+      padding: 6px 4px;
+    }
+
+    /* --- Select styling to make dropdown readable --- */
+    /* This styles the closed select box and attempts to style options in many browsers */
+    select {
+      color: var(--select-text);
+      background-color: var(--select-bg);
+      border: 1px solid rgba(7,16,38,0.12);
+      padding-right: 40px;               /* место под стрелку */
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      appearance: none;
+      background-image: linear-gradient(45deg, transparent 50%, var(--select-text) 50%), linear-gradient(135deg, var(--select-text) 50%, transparent 50%);
+      background-position: calc(100% - 18px) calc(1em + 2px), calc(100% - 13px) calc(1em + 2px);
+      background-size: 6px 6px, 6px 6px;
+      background-repeat: no-repeat;
+      font-size: 1rem;
+      border-radius: 10px;
+      color: var(--select-text);
+    }
+    select option {
+      color: var(--select-text);
+      background-color: var(--select-bg);
+    }
+    select:focus {
+      box-shadow: 0 0 0 3px rgba(56,189,248,0.08);
+      outline: none;
+      border-color: rgba(56,189,248,0.45);
+    }
+    /* Remove native expand in IE/Edge */
+    select::-ms-expand { display: none; }
+
+    /* Плейсхолдер и readonly/disabled — явно читаемы */
+    ::placeholder { color: rgba(179,197,212,0.5); }
+    input[readonly], input[disabled], select[disabled] {
+      background: transparent !important;
+      color: var(--muted-2) !important;
+      opacity: 1;
+    }
+
+    /* Кнопки */
+    .btn { border-radius: 999px; padding: 8px 14px; border: 1px solid rgba(255,255,255,0.06); background: rgba(255,255,255,0.02); color: var(--text); cursor:pointer; font-size: 0.95rem; }
+    .btn-primary { background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #071026; font-weight:600; border-color: transparent; }
+    .btn:hover { filter: brightness(1.05); }
+
+    .note { color: var(--muted); font-size: 0.92rem; }
+    .error { color: var(--danger); font-size: 0.95rem; min-height: 1.1rem; margin-top: 8px; }
+
+    /* Результаты */
+    .summary-grid { display:grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap:10px; margin-top: 6px; }
+    .metric { background: rgba(255,255,255,0.01); border-radius:10px; padding:10px; border:1px solid rgba(255,255,255,0.03); }
+    .metric-label { color: var(--muted-2); font-size: 0.82rem; margin-bottom:6px; }
+    .metric-value { font-size: 1.15rem; font-weight:700; color: var(--text); }
+
+    .pill { display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:999px; background: rgba(56,189,248,0.06); color: var(--accent); font-size:0.9rem; }
+    .pill-dot { width:8px; height:8px; border-radius:999px; background: var(--accent); }
+
+    /* График платежей: фиксированный заголовок + прокручиваемая тело */
+    .schedule { margin-top: 16px; border-radius: var(--radius); border:1px solid rgba(255,255,255,0.03); overflow: hidden; display:flex; flex-direction:column; max-height: 420px; background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(0,0,0,0.02)); }
+    .schedule-header { display:flex; justify-content:space-between; align-items:center; padding:10px 12px; border-bottom:1px solid rgba(255,255,255,0.03); background: linear-gradient(180deg, rgba(56,189,248,0.03), rgba(0,0,0,0)); color: var(--muted); font-size:0.95rem; }
+    .schedule-table-wrapper { overflow:auto; -webkit-overflow-scrolling: touch; flex:1 1 auto; min-height:120px; }
+    table { width:100%; border-collapse:collapse; font-size:0.95rem; min-width:640px; }
+    th, td { padding:8px 10px; text-align:right; border-bottom:1px solid rgba(255,255,255,0.02); }
+    th { position: sticky; top: 0; background: linear-gradient(180deg, rgba(2,6,23,0.98), rgba(2,6,23,0.98)); color: var(--muted); font-weight:600; z-index:3; }
+    tr:nth-child(even) td { background: rgba(255,255,255,0.01); }
+    td:first-child, th:first-child, td:nth-child(2), th:nth-child(2) { text-align:center; white-space:nowrap; color: var(--muted-2); }
+
+    /* Мобильный: таблица горизонтальная прокрутка */
+    @media (max-width: 640px) {
+      .schedule-table-wrapper { min-height: 220px; }
+      table { min-width: 920px; } /* позволить горизонтальную прокрутку на узких экранах */
+      select { padding: 10px 44px 10px 8px; font-size: 1.02rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="header">
+      <div class="title">Ипотечный калькулятор — полный набор программ</div>
+      <div class="subtitle">Выберите программу, измените стоимость — остальные поля подставятся автоматически.</div>
+    </div>
+
+    <div class="calculator">
+      <div class="grid">
+        <!-- Левая колонка: ввод -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Исходные данные</div>
+            <div class="card-hint">Меняйте только стоимость (или выберите "Пользовательские").</div>
+          </div>
+
+          <div class="fields">
+            <div class="field field-wide">
+              <label for="product">Программа</label>
+              <div class="input-wrapper">
+                <!-- data-customize allows the custom-select fallback to target this select if native options are unreadable -->
+                <select id="product" data-customize="true" aria-label="Выбор ипотечной программы"></select>
+              </div>
+            </div>
+
+            <div class="field field-wide">
+              <label for="price">Стоимость объекта, ₸</label>
+              <div class="input-wrapper">
+                <span style="color:var(--muted-2)">₸</span>
+                <input id="price" type="number" min="0" step="1000" placeholder="например, 16 170 000">
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="downPaymentPercent">Первоначальный взнос, %</label>
+              <div class="input-wrapper">
+                <input id="downPaymentPercent" type="number" min="0" max="100" step="0.1">
+                <span style="color:var(--muted-2)">%</span>
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="downPaymentAmount">Первоначальный взнос, ₸</label>
+              <div class="input-wrapper">
+                <span style="color:var(--muted-2)">₸</span>
+                <input id="downPaymentAmount" type="number" min="0" step="1000" placeholder="">
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="rate">Процентная ставка, % годовых</label>
+              <div class="input-wrapper">
+                <input id="rate" type="number" min="0" max="100" step="0.01">
+                <span style="color:var(--muted-2)">%</span>
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="termYears">Срок кредита, лет</label>
+              <div class="input-wrapper">
+                <input id="termYears" type="number" min="1" max="50" step="1">
+                <span style="color:var(--muted-2)">лет</span>
+              </div>
+            </div>
+
+            <div class="field field-wide">
+              <label for="startDate">Дата выдачи (для графика)</label>
+              <div class="input-wrapper">
+                <input id="startDate" type="date">
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:12px;">
+            <div class="note">Если хотите редактировать все поля вручную — выберите "Пользовательские".</div>
+            <div style="display:flex; gap:8px;">
+              <button id="resetBtn" class="btn">Сбросить</button>
+            </div>
+          </div>
+
+          <div id="error" class="error" role="alert" aria-live="polite"></div>
+          <div id="productNote" class="note" style="margin-top:8px;"></div>
+        </div>
+
+        <!-- Правая колонка: результаты -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Результаты расчёта</div>
+            <div class="card-hint">Основные показатели</div>
+          </div>
+
+          <div class="summary-grid">
+            <div class="metric">
+              <div class="metric-label">Сумма кредита</div>
+              <div id="loanAmount" class="metric-value">–</div>
+            </div>
+            <div class="metric">
+              <div class="metric-label">Ежемесячный платёж</div>
+              <div id="monthlyPayment" class="metric-value">–</div>
+            </div>
+            <div class="metric">
+              <div class="metric-label">Общая переплата</div>
+              <div id="totalInterest" class="metric-value" style="color:var(--danger)">–</div>
+            </div>
+            <div class="metric">
+              <div class="metric-label">Ориентировочная ГЭСВ</div>
+              <div id="effRate" class="metric-value">–</div>
+            </div>
+          </div>
+
+          <div class="note" style="margin-top:10px;">ГЭСВ считается приближённо по денежным потокам (без учёта страхований и отдельных комиссий).</div>
+
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:12px;">
+            <div class="pill"><span class="pill-dot"></span><span>Ниже — подробный график платежей</span></div>
+            <button id="scrollToSchedule" class="btn btn-primary">К графику</button>
+          </div>
+        </div>
+
+      </div> <!-- end grid -->
+
+      <!-- График платежей -->
+      <div class="schedule" id="scheduleBlock">
+        <div class="schedule-header">
+          <div>График платежей (аннуитет)</div>
+          <div id="scheduleInfo" class="card-hint"></div>
+        </div>
+
+        <div class="schedule-table-wrapper" id="scheduleWrapper" tabindex="-1">
+          <table aria-label="График платежей">
+            <thead>
+              <tr>
+                <th>№</th>
+                <th>Дата</th>
+                <th>Платёж, ₸</th>
+                <th>Тело, ₸</th>
+                <th>Проценты, ₸</th>
+                <th>Остаток долга, ₸</th>
+              </tr>
+            </thead>
+            <tbody id="scheduleBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div> <!-- end calculator -->
+  </div>
+
+  <script>
+    (function () {
+      // --- DOM ---
+      const productEl = document.getElementById('product');
+      const priceEl = document.getElementById('price');
+      const dpPercentEl = document.getElementById('downPaymentPercent');
+      const dpAmountEl = document.getElementById('downPaymentAmount');
+      const rateEl = document.getElementById('rate');
+      const termYearsEl = document.getElementById('termYears');
+      const startDateEl = document.getElementById('startDate');
+
+      const loanAmountEl = document.getElementById('loanAmount');
+      const monthlyPaymentEl = document.getElementById('monthlyPayment');
+      const totalInterestEl = document.getElementById('totalInterest');
+      const effRateEl = document.getElementById('effRate');
+      const errorEl = document.getElementById('error');
+      const scheduleBodyEl = document.getElementById('scheduleBody');
+      const scheduleInfoEl = document.getElementById('scheduleInfo');
+      const resetBtn = document.getElementById('resetBtn');
+      const scrollBtn = document.getElementById('scrollToSchedule');
+      const productNoteEl = document.getElementById('productNote');
+
+      // --- Products (взято из присланных файлов; при необходимости уточним значения) ---
+      const PRODUCTS = {
+        "custom": { name: "Пользовательские", price: 0, downPercent: 20, rate: 18, termYears: 15, note: "Ручной режим — редактируйте все поля." },
+
+        "altyn_arman": { name: "Алтын Арман (Altyn Bank)", price: 16170000, downPercent: 20, rate: 13.99, termYears: 20, note: "Из файла: пример расчёта Алтын банк — ПВ 20%, ставка 13.99%." },
+
+        "baspana_hit": { name: "Баспана Хит", price: 16170000, downPercent: 20, rate: 12.50, termYears: 20, note: "Из файла 'Баспана Хит' — пример." },
+
+        "biz_ipoteka_altyn": { name: "Бизнес Ипотека (Алтын банк)", price: 25000000, downPercent: 50, rate: 17.00, termYears: 10, note: "Бизнес ипотека — пример (ПВ от 50%)." },
+
+        "bck_zalog": { name: "БЦК — Залоговый Кредит", price: 10000000, downPercent: 0, rate: 21.00, termYears: 10, note: "БЦК Залоговый — пример." },
+
+        "bck_super": { name: "БЦК — Super ипотека", price: 21382560, downPercent: 20, rate: 14.00, termYears: 10, note: "BCK Super — в файле есть таблицы ставок." },
+
+        "bck_standard": { name: "БЦК — Стандарт", price: 25000000, downPercent: 20, rate: 19.50, termYears: 10, note: "BCK Стандарт — пример." },
+
+        "bck_standardna": { name: "БЦК — Стандартная ипотека", price: 75400000, downPercent: 50, rate: 17.00, termYears: 15, note: "Большой пример из файла 'Стандартная'." },
+
+        "elorda_zhastary": { name: "Елорда Жастары", price: 18000000, downPercent: 10, rate: 5.00, termYears: 19, note: "Елорда Жастары — ставка 5% (пример)." },
+
+        "women_umay": { name: "Женская ипотека «ҰМАЙ»", price: 25000000, downPercent: 15, rate: 0, termYears: 25, note: "Условия по файлу: ПВ от 15% (20% — Aстанa); ставка по условиям банка." },
+
+        "zelen_otbasy": { name: "Зелёная ипотека Отбасы", price: 35000000, downPercent: 20, rate: 12.50, termYears: 13, note: "Зелёная ипотека — макс. сумма 35 млн (пример)." },
+
+        "kaskad_ddu": { name: "Каскад — ДДУ/готовое жильё", price: 30000000, downPercent: 50, rate: 23.00, termYears: 15, note: "Каскад — в файле есть подробная таблица." },
+
+        "kik_orda": { name: "Ипотека «Орда» (КИК)", price: 20000000, downPercent: 30, rate: 12.00, termYears: 20, note: "КИК — варианты ПВ/ставок в файле." },
+
+        "halyk": { name: "Народный банк / Halyk ипотека", price: 30000000, downPercent: 20, rate: 18.00, termYears: 15, note: "Halyk / Народный банк — пример из файла." },
+
+        "nauryz_zhumysker": { name: "Наурыз (жұмыскер) Отбасы банк", price: 7000000, downPercent: 20, rate: 7.00, termYears: 12, note: "Наурыз — пример (варианты в файле)." },
+
+        "nauryz": { name: "Наурыз (Отбасы банк)", price: 6300000, downPercent: 20, rate: 9.00, termYears: 12, note: "Альтернативный пример Наурыз." },
+
+        "ni_30_70": { name: "НИ 30-70", price: 7000000, downPercent: 30, rate: 4.50, termYears: 6, note: "НИ 30-70 — таблицы и примеры в файле." },
+
+        "halyk_standard": { name: "Halyk — Стандарт", price: 30000000, downPercent: 20, rate: 17.50, termYears: 15, note: "Halyk Стандарт — пример." },
+
+        "fridbank_ddu": { name: "ФридБанк (ДДУ)", price: 55000000, downPercent: 20, rate: 19.50, termYears: 15, note: "ФридБанк — пример." },
+
+        "umai_otbasy": { name: "Умай (Отбасы)", price: 10000000, downPercent: 20, rate: 3.50, termYears: 6, note: "Умай — таблицы; в файле есть разные сроки/ставки." },
+
+        "otbasy_umay": { name: "Отбасы Умай (альт.)", price: 10000000, downPercent: 20, rate: 3.50, termYears: 6, note: "Альтернативные данные Умай/Отбасы." }
+      };
+
+      // --- Helpers ---
+      function formatMoney(value) {
+        if (!isFinite(value)) return '–';
+        return Number(value).toLocaleString('ru-RU', { maximumFractionDigits: 0 });
+      }
+      function formatPercent(value) {
+        if (!isFinite(value)) return '–';
+        return value.toFixed(2).replace('.', ',') + ' %';
+      }
+      function parseNumber(el) {
+        if (!el) return 0;
+        const raw = el.value;
+        if (raw === null || raw === undefined) return 0;
+        const s = String(raw).replace(/\s+/g, '').replace(',', '.').trim();
+        if (s === '') return 0;
+        const v = parseFloat(s);
+        return isFinite(v) ? v : 0;
+      }
+      function addMonths(date, months) {
+        const d = new Date(date.getTime());
+        const day = d.getDate();
+        d.setMonth(d.getMonth() + months);
+        if (d.getDate() !== day) d.setDate(0);
+        return d;
+      }
+      function computeIRR(cashFlows, guess) {
+        let rate = (guess != null) ? guess : 0.01;
+        const maxIter = 100, tol = 1e-10;
+        for (let i = 0; i < maxIter; i++) {
+          let npv = 0, der = 0;
+          for (let t = 0; t < cashFlows.length; t++) {
+            const cf = cashFlows[t];
+            const denom = Math.pow(1 + rate, t);
+            if (!isFinite(denom) || denom === 0) return NaN;
+            npv += cf / denom;
+            if (t > 0) der -= t * cf / (denom * (1 + rate));
+          }
+          if (Math.abs(npv) < tol) return rate;
+          if (!isFinite(der) || der === 0) return NaN;
+          const newRate = rate - npv / der;
+          if (!isFinite(newRate) || newRate <= -0.9999999) return NaN;
+          rate = newRate;
+        }
+        return rate;
+      }
+
+      // last-edited state (чтобы не перезаписывать поле, которое пользователь правит)
+      let lastEditedDownPayment = null;
+      dpPercentEl && dpPercentEl.addEventListener('input', () => lastEditedDownPayment = 'percent');
+      dpAmountEl && dpAmountEl.addEventListener('input', () => lastEditedDownPayment = 'amount');
+
+      // --- UI / data binding ---
+      function populateProductList() {
+        productEl.innerHTML = '';
+        // Пользовательские первыми
+        const optCustom = document.createElement('option');
+        optCustom.value = 'custom';
+        optCustom.textContent = PRODUCTS.custom.name;
+        productEl.appendChild(optCustom);
+
+        Object.keys(PRODUCTS).forEach(key => {
+          if (key === 'custom') return;
+          const opt = document.createElement('option');
+          opt.value = key;
+          opt.textContent = PRODUCTS[key].name;
+          productEl.appendChild(opt);
+        });
+
+        // выбрать первый ненулевой продукт по умолчанию, если есть
+        if (productEl.querySelector('option[value="altyn_arman"]')) {
+          productEl.value = 'altyn_arman';
+        } else {
+          productEl.value = 'custom';
+        }
+      }
+
+      function applyProduct(key) {
+        const p = PRODUCTS[key] || PRODUCTS.custom;
+        const isCustom = key === 'custom';
+
+        // Price: если пользователь уже ввёл свою цену — не перезаписываем её,
+        // за исключением случая, когда цена пустая
+        const existingPrice = parseNumber(priceEl);
+        priceEl.value = (existingPrice > 0 && !isCustom) ? existingPrice : (p.price || '');
+
+        dpPercentEl.value = p.downPercent != null ? p.downPercent : '';
+        // вычисляем сумму первоначального взноса по текущей цене и проценту
+        const priceVal = parseNumber(priceEl);
+        const computedAmount = (priceVal && p.downPercent) ? Math.round(priceVal * p.downPercent / 100) : '';
+        dpAmountEl.value = computedAmount || '';
+
+        rateEl.value = (p.rate != null && p.rate !== 0) ? p.rate : '';
+        termYearsEl.value = p.termYears || '';
+
+        // Для не-custom делаем поля readonly (не disabled), чтобы значения можно было видеть и скрипт мог их менять.
+        [dpPercentEl, dpAmountEl, rateEl, termYearsEl].forEach(el => {
+          if (!el) return;
+          if (isCustom) {
+            el.removeAttribute('readonly');
+            el.removeAttribute('disabled'); // оставляем enabled, чтобы скрипт мог обновлять value
+            el.style.cursor = '';
+          } else {
+            el.setAttribute('readonly', 'true');
+            el.removeAttribute('disabled');
+            el.style.cursor = 'not-allowed';
+          }
+        });
+
+        productNoteEl.textContent = p.note || '';
+        recalc();
+      }
+
+      function recalc() {
+        errorEl.textContent = '';
+
+        const price = Math.max(0, parseNumber(priceEl));
+        let dpPercent = Math.max(0, Math.min(100, parseNumber(dpPercentEl)));
+        let dpAmount = Math.max(0, parseNumber(dpAmountEl));
+        const rate = Math.max(0, parseNumber(rateEl));
+        const termYears = Math.max(0, parseInt(termYearsEl.value || '0', 10));
+
+        if (!price || !termYears) {
+          loanAmountEl.textContent = '–';
+          monthlyPaymentEl.textContent = '–';
+          totalInterestEl.textContent = '–';
+          effRateEl.textContent = '–';
+          scheduleBodyEl.innerHTML = '';
+          return;
+        }
+
+        // Определяем, редактирует ли пользователь сейчас поле суммы или процента
+        const userEditingAmount = (lastEditedDownPayment === 'amount') && (document.activeElement === dpAmountEl);
+        const userEditingPercent = (lastEditedDownPayment === 'percent') && (document.activeElement === dpPercentEl);
+
+        let downPayment;
+        if (dpAmount > 0 && !userEditingAmount && lastEditedDownPayment === 'amount') {
+          // пользователь недавно вводил сумму — используем её
+          downPayment = dpAmount;
+          dpPercent = price > 0 ? (downPayment / price * 100) : 0;
+          if (!userEditingPercent) dpPercentEl.value = dpPercent.toFixed(1);
+        } else if (userEditingAmount && dpAmount > 0) {
+          downPayment = dpAmount;
+          if (!userEditingPercent) dpPercentEl.value = (price > 0 ? (downPayment / price * 100) : 0).toFixed(1);
+        } else {
+          // используем процент как источник истины
+          dpPercent = Math.max(0, Math.min(100, dpPercent));
+          downPayment = price * dpPercent / 100;
+          dpAmount = downPayment;
+          if (!userEditingAmount) dpAmountEl.value = Math.round(dpAmount) || '';
+        }
+
+        if (downPayment >= price) {
+          errorEl.textContent = 'Первоначальный взнос не может быть больше или равен стоимости объекта.';
+          loanAmountEl.textContent = '–';
+          monthlyPaymentEl.textContent = '–';
+          totalInterestEl.textContent = '–';
+          effRateEl.textContent = '–';
+          scheduleBodyEl.innerHTML = '';
+          return;
+        }
+
+        const loan = price - downPayment;
+        const termMonths = termYears * 12;
+        const monthlyRate = rate / 100 / 12;
+
+        let payment;
+        if (monthlyRate === 0) {
+          payment = loan / termMonths;
+        } else {
+          const factor = Math.pow(1 + monthlyRate, termMonths);
+          payment = loan * monthlyRate * factor / (factor - 1);
+        }
+
+        // построение графика (ограничение 1200 строк — чтобы не зависать)
+        const scheduleRows = [];
+        let balance = loan;
+        let totalInterest = 0;
+        let currentDate = startDateEl.value ? new Date(startDateEl.value) : new Date();
+        const cashFlows = [];
+        cashFlows.push(loan);
+        for (let i = 1; i <= termMonths; i++) {
+          const interestPart = balance * monthlyRate;
+          const principalPart = payment - interestPart;
+          const newBalance = balance - principalPart;
+          totalInterest += interestPart;
+          const payDate = addMonths(currentDate, i);
+
+          scheduleRows.push({
+            index: i,
+            date: payDate,
+            payment,
+            principal: principalPart,
+            interest: interestPart,
+            balance: newBalance > 0.5 ? newBalance : 0
+          });
+
+          balance = newBalance;
+          cashFlows.push(-payment);
+        }
+
+        // расчёт IRR -> ГЭСВ (приближённо)
+        let effAnnualRate = NaN;
+        try {
+          const irrMonthly = computeIRR(cashFlows, 0.01);
+          if (isFinite(irrMonthly) && irrMonthly > -0.9999) {
+            effAnnualRate = Math.pow(1 + irrMonthly, 12) - 1;
+          }
+        } catch (e) {
+          effAnnualRate = NaN;
+        }
+
+        // вывод
+        loanAmountEl.textContent = formatMoney(loan) + ' ₸';
+        monthlyPaymentEl.textContent = formatMoney(payment) + ' ₸';
+        totalInterestEl.textContent = formatMoney(totalInterest) + ' ₸';
+        effRateEl.textContent = isFinite(effAnnualRate) ? formatPercent(effAnnualRate * 100) : 'н/д';
+
+        scheduleInfoEl.textContent = 'Срок: ' + termMonths + ' мес • Платёж: ' + formatMoney(payment) + ' ₸';
+
+        // таблица: наполняем все строки (браузер прокручивает внутри .schedule-table-wrapper)
+        const rowsHtml = scheduleRows.map(row => {
+          const d = row.date;
+          const dateStr = d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
+          return '<tr>' +
+            '<td>' + row.index + '</td>' +
+            '<td>' + dateStr + '</td>' +
+            '<td>' + formatMoney(row.payment) + '</td>' +
+            '<td>' + formatMoney(row.principal) + '</td>' +
+            '<td>' + formatMoney(row.interest) + '</td>' +
+            '<td>' + formatMoney(row.balance) + '</td>' +
+            '</tr>';
+        }).join('');
+        scheduleBodyEl.innerHTML = rowsHtml;
+      }
+
+      // обработчики
+      function attachHandlers() {
+        productEl.addEventListener('change', () => applyProduct(productEl.value));
+        [priceEl, dpPercentEl, dpAmountEl, rateEl, termYearsEl, startDateEl].forEach(el => {
+          if (!el) return;
+          el.addEventListener('input', () => {
+            recalc();
+          });
+        });
+
+        dpAmountEl && dpAmountEl.addEventListener('focus', () => lastEditedDownPayment = 'amount');
+        dpPercentEl && dpPercentEl.addEventListener('focus', () => lastEditedDownPayment = 'percent');
+
+        resetBtn.addEventListener('click', () => {
+          populateProductList();
+          productEl.dispatchEvent(new Event('change'));
+          startDateEl.value = '';
+          lastEditedDownPayment = 'percent';
+          recalc();
+        });
+
+        scrollBtn.addEventListener('click', () => {
+          const block = document.getElementById('scheduleBlock');
+          if (block && block.scrollIntoView) block.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          document.getElementById('scheduleWrapper').focus && document.getElementById('scheduleWrapper').focus();
+        });
+      }
+
+      // init
+      populateProductList();
+      attachHandlers();
+      applyProduct(productEl.value || 'custom');
+      recalc();
+
+      // make PRODUCTS editable from консоли при необходимости
+      window.__PRODUCTS = PRODUCTS;
+    })();
+  </script>
+
+  <!-- Custom select fallback (applies only if native options are unreadable on the user's platform).
+       It looks for select[data-customize="true"] and replaces it with a fully stylable dropdown.
+       Inclusion is optional — native select will be used when possible. -->
+  <script>
+    (function () {
+      function nativeOptionsReadable() {
+        // Heuristic: create a temporary select/option, check computed color/background on option.
+        try {
+          const s = document.createElement('select');
+          s.style.position = 'fixed';
+          s.style.left = '-9999px';
+          const o = document.createElement('option');
+          o.textContent = 'Тест';
+          s.appendChild(o);
+          document.body.appendChild(s);
+          // try to open the options by focusing — we can't open programmatically reliably, but we can read computed styles
+          const cs = window.getComputedStyle(o);
+          const color = cs && cs.color ? cs.color : '';
+          const bg = cs && cs.backgroundColor ? cs.backgroundColor : '';
+          document.body.removeChild(s);
+          // If option color is non-empty and not fully transparent, we assume native rendering will be readable
+          if (color && color !== 'transparent') return true;
+        } catch (e) {
+          // ignore
+        }
+        return false;
+      }
+
+      // If native options are likely readable, don't replace
+      if (nativeOptionsReadable()) return;
+
+      function makeCustom(select) {
+        if (!select || select.dataset._customized) return;
+        select.dataset._customized = '1';
+        select.style.position = 'absolute';
+        select.style.left = '-9999px';
+
+        const wrap = document.createElement('div');
+        wrap.className = 'custom-select-wrap';
+        wrap.style.position = 'relative';
+        wrap.style.display = 'inline-block';
+        wrap.style.width = getComputedStyle(select).width || '100%';
+
+        const panel = document.createElement('button');
+        panel.type = 'button';
+        panel.className = 'custom-select-panel';
+        panel.textContent = select.options[select.selectedIndex] ? select.options[select.selectedIndex].text : 'Выберите';
+        panel.style.width = '100%';
+        panel.style.textAlign = 'left';
+        panel.style.padding = '8px 36px 8px 8px';
+        panel.style.borderRadius = '999px';
+        panel.style.border = '1px solid rgba(7,16,38,0.12)';
+        panel.style.background = '#f6fbff';
+        panel.style.color = '#071026';
+        panel.style.cursor = 'pointer';
+
+        const list = document.createElement('ul');
+        list.className = 'custom-select-list';
+        list.style.listStyle = 'none';
+        list.style.margin = 0;
+        list.style.padding = '6px';
+        list.style.position = 'absolute';
+        list.style.left = 0;
+        list.style.right = 0;
+        list.style.top = 'calc(100% + 6px)';
+        list.style.borderRadius = '10px';
+        list.style.boxShadow = '0 8px 20px rgba(2,6,23,0.5)';
+        list.style.background = '#f6fbff';
+        list.style.maxHeight = '240px';
+        list.style.overflow = 'auto';
+        list.style.zIndex = 9999;
+        list.style.display = 'none';
+
+        for (let i = 0; i < select.options.length; i++) {
+          const opt = select.options[i];
+          const li = document.createElement('li');
+          li.textContent = opt.text;
+          li.dataset.value = opt.value;
+          li.style.padding = '8px';
+          li.style.cursor = 'pointer';
+          li.style.color = '#071026';
+          li.addEventListener('click', () => {
+            select.value = li.dataset.value;
+            panel.textContent = li.textContent;
+            list.style.display = 'none';
+            select.dispatchEvent(new Event('input', { bubbles: true }));
+            select.dispatchEvent(new Event('change', { bubbles: true }));
+          });
+          li.addEventListener('mouseenter', () => li.style.background = 'rgba(7,16,38,0.04)');
+          li.addEventListener('mouseleave', () => li.style.background = 'transparent');
+          list.appendChild(li);
+        }
+
+        wrap.appendChild(panel);
+        wrap.appendChild(list);
+        select.parentNode.insertBefore(wrap, select.nextSibling);
+
+        panel.addEventListener('click', () => {
+          list.style.display = (list.style.display === 'none' || !list.style.display) ? 'block' : 'none';
+        });
+
+        document.addEventListener('click', (e) => {
+          if (!wrap.contains(e.target)) list.style.display = 'none';
+        });
+      }
+
+      document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('select[data-customize="true"]').forEach(s => makeCustom(s));
+      });
+    })();
+  </script>
+</body>
+</html>
