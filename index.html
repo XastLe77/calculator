@@ -122,11 +122,6 @@
     select::-ms-expand { display: none; }
 
     ::placeholder { color: rgba(179,197,212,0.5); }
-    input[readonly], input[disabled], select[disabled] {
-      background: transparent !important;
-      color: var(--muted-2) !important;
-      opacity: 1;
-    }
 
     .btn { border-radius: 999px; padding: 8px 14px; border: 1px solid rgba(255,255,255,0.06); background: rgba(255,255,255,0.02); color: var(--text); cursor:pointer; font-size: 0.95rem; }
     .btn-primary { background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #071026; font-weight:600; border-color: transparent; }
@@ -163,7 +158,7 @@
   <div class="wrapper">
     <div class="header">
       <div class="title">Ипотечный калькулятор — полный набор программ</div>
-      <div class="subtitle">Выберите программу, измените стоимость, срок и первоначальный взнос % — остальные поля подставятся автоматически.</div>
+      <div class="subtitle">Выберите программу, при необходимости скорректируйте все поля и получите график платежей.</div>
     </div>
 
     <div class="calculator">
@@ -172,7 +167,7 @@
         <div class="card">
           <div class="card-header">
             <div class="card-title">Исходные данные</div>
-            <div class="card-hint">Меняйте стоимость, срок и ПВ % (или выберите "Пользовательские" для полного ручного режима).</div>
+            <div class="card-hint">Программа подставляет стартовые параметры, но вы можете менять любые поля.</div>
           </div>
 
           <div class="fields">
@@ -232,7 +227,7 @@
           </div>
 
           <div style="display:flex; justify-content:space-between; align-items:center; margin-top:12px;">
-            <div class="note">Если хотите редактировать все поля вручную — выберите "Пользовательские".</div>
+            <div class="note">Можно менять любые параметры и сразу смотреть, как меняется платёж.</div>
             <div style="display:flex; gap:8px;">
               <button id="resetBtn" class="btn">Сбросить</button>
             </div>
@@ -330,45 +325,25 @@
       // --- Products ---
       const PRODUCTS = {
         "custom": { name: "Пользовательские", price: 0, downPercent: 20, rate: 18, termYears: 15, note: "Ручной режим — редактируйте все поля." },
-
-        "altyn_arman": { name: "Алтын Арман (Altyn Bank)", price: 16170000, downPercent: 20, rate: 13.99, termYears: 20, note: "Из файла: пример расчёта Алтын банк — ПВ 20%, ставка 13.99%." },
-
-        "baspana_hit": { name: "Баспана Хит", price: 16170000, downPercent: 20, rate: 12.50, termYears: 20, note: "Из файла 'Баспана Хит' — пример." },
-
-        "biz_ipoteka_altyn": { name: "Бизнес Ипотека (Алтын банк)", price: 25000000, downPercent: 50, rate: 17.00, termYears: 10, note: "Бизнес ипотека — пример (ПВ от 50%)." },
-
+        "altyn_arman": { name: "Алтын Арман (Altyn Bank)", price: 16170000, downPercent: 20, rate: 13.99, termYears: 20, note: "Алтын банк — ПВ 20%, ставка 13.99% (пример)." },
+        "baspana_hit": { name: "Баспана Хит", price: 16170000, downPercent: 20, rate: 12.50, termYears: 20, note: "Пример Баспана Хит." },
+        "biz_ipoteka_altyn": { name: "Бизнес Ипотека (Алтын банк)", price: 25000000, downPercent: 50, rate: 17.00, termYears: 10, note: "Бизнес ипотека — ПВ от 50%." },
         "bck_zalog": { name: "БЦК — Залоговый Кредит", price: 10000000, downPercent: 0, rate: 21.00, termYears: 10, note: "БЦК Залоговый — пример." },
-
-        "bck_super": { name: "БЦК — Super ипотека", price: 21382560, downPercent: 20, rate: 14.00, termYears: 10, note: "BCK Super — в файле есть таблицы ставок." },
-
+        "bck_super": { name: "БЦК — Super ипотека", price: 21382560, downPercent: 20, rate: 14.00, termYears: 10, note: "BCK Super — пример." },
         "bck_standard": { name: "БЦК — Стандарт", price: 25000000, downPercent: 20, rate: 19.50, termYears: 10, note: "BCK Стандарт — пример." },
-
-        "bck_standardna": { name: "БЦК — Стандартная ипотека", price: 75400000, downPercent: 50, rate: 17.00, termYears: 15, note: "Большой пример из файла 'Стандартная'." },
-
+        "bck_standardna": { name: "БЦК — Стандартная ипотека", price: 75400000, downPercent: 50, rate: 17.00, termYears: 15, note: "Стандартная ипотека — большой пример." },
         "elorda_zhastary": { name: "Елорда Жастары", price: 18000000, downPercent: 10, rate: 5.00, termYears: 19, note: "Елорда Жастары — ставка 5% (пример)." },
-
-        "women_umay": { name: "Женская ипотека «ҰМАЙ»", price: 25000000, downPercent: 15, rate: 0, termYears: 25, note: "Условия по файлу: ПВ от 15% (20% — Aстанa); ставка по условиям банка." },
-
-        "zelen_otbasy": { name: "Зелёная ипотека Отбасы", price: 35000000, downPercent: 20, rate: 12.50, termYears: 13, note: "Зелёная ипотека — макс. сумма 35 млн (пример)." },
-
-        "kaskad_ddu": { name: "Каскад — ДДУ/готовое жильё", price: 30000000, downPercent: 50, rate: 23.00, termYears: 15, note: "Каскад — в файле есть подробная таблица." },
-
-        "kik_orda": { name: "Ипотека «Орда» (КИК)", price: 20000000, downPercent: 30, rate: 12.00, termYears: 20, note: "КИК — варианты ПВ/ставок в файле." },
-
-        "halyk": { name: "Народный банк / Halyk ипотека", price: 30000000, downPercent: 20, rate: 18.00, termYears: 15, note: "Halyk / Народный банк — пример из файла." },
-
-        "nauryz_zhumysker": { name: "Наурыз (жұмыскер) Отбасы банк", price: 7000000, downPercent: 20, rate: 7.00, termYears: 12, note: "Наурыз — пример (варианты в файле)." },
-
+        "women_umay": { name: "Женская ипотека «ҰМАЙ»", price: 25000000, downPercent: 15, rate: 0, termYears: 25, note: "ПВ от 15% (20% — Aстана); ставка по условиям банка." },
+        "zelen_otbasy": { name: "Зелёная ипотека Отбасы", price: 35000000, downPercent: 20, rate: 12.50, termYears: 13, note: "Зелёная ипотека — макс. сумма 35 млн." },
+        "kaskad_ddu": { name: "Каскад — ДДУ/готовое жильё", price: 30000000, downPercent: 50, rate: 23.00, termYears: 15, note: "Каскад — пример." },
+        "kik_orda": { name: "Ипотека «Орда» (КИК)", price: 20000000, downPercent: 30, rate: 12.00, termYears: 20, note: "Орда — варианты ПВ/ставок." },
+        "halyk": { name: "Народный банк / Halyk ипотека", price: 30000000, downPercent: 20, rate: 18.00, termYears: 15, note: "Halyk ипотека — пример." },
+        "nauryz_zhumysker": { name: "Наурыз (жұмыскер) Отбасы банк", price: 7000000, downPercent: 20, rate: 7.00, termYears: 12, note: "Наурыз — пример." },
         "nauryz": { name: "Наурыз (Отбасы банк)", price: 6300000, downPercent: 20, rate: 9.00, termYears: 12, note: "Альтернативный пример Наурыз." },
-
-        "ni_30_70": { name: "НИ 30-70", price: 7000000, downPercent: 30, rate: 4.50, termYears: 6, note: "НИ 30-70 — таблицы и примеры в файле." },
-
+        "ni_30_70": { name: "НИ 30-70", price: 7000000, downPercent: 30, rate: 4.50, termYears: 6, note: "НИ 30-70 — пример." },
         "halyk_standard": { name: "Halyk — Стандарт", price: 30000000, downPercent: 20, rate: 17.50, termYears: 15, note: "Halyk Стандарт — пример." },
-
         "fridbank_ddu": { name: "ФридБанк (ДДУ)", price: 55000000, downPercent: 20, rate: 19.50, termYears: 15, note: "ФридБанк — пример." },
-
-        "umai_otbasy": { name: "Умай (Отбасы)", price: 10000000, downPercent: 20, rate: 3.50, termYears: 6, note: "Умай — таблицы; в файле есть разные сроки/ставки." },
-
+        "umai_otbasy": { name: "Умай (Отбасы)", price: 10000000, downPercent: 20, rate: 3.50, termYears: 6, note: "Умай — пример." },
         "otbasy_umay": { name: "Отбасы Умай (альт.)", price: 10000000, downPercent: 20, rate: 3.50, termYears: 6, note: "Альтернативные данные Умай/Отбасы." }
       };
 
@@ -418,7 +393,7 @@
         return rate;
       }
 
-      // last-edited state
+      // состояние: какое поле ПВ редактировали последним
       let lastEditedDownPayment = null;
       dpPercentEl && dpPercentEl.addEventListener('input', () => lastEditedDownPayment = 'percent');
       dpAmountEl && dpAmountEl.addEventListener('input', () => lastEditedDownPayment = 'amount');
@@ -447,47 +422,20 @@
 
       function applyProduct(key) {
         const p = PRODUCTS[key] || PRODUCTS.custom;
-        const isCustom = key === 'custom';
 
         const existingPrice = parseNumber(priceEl);
-        priceEl.value = (existingPrice > 0 && !isCustom) ? existingPrice : (p.price || '');
+        priceEl.value = (existingPrice > 0) ? existingPrice : (p.price || '');
 
         dpPercentEl.value = p.downPercent != null ? p.downPercent : '';
 
         const priceVal = parseNumber(priceEl);
-        const computedAmount = (priceVal && p.downPercent) ? Math.round(priceVal * p.downPercent / 100) : '';
+        const computedAmount = (priceVal && p.downPercent != null)
+          ? Math.round(priceVal * p.downPercent / 100)
+          : '';
         dpAmountEl.value = computedAmount || '';
 
         rateEl.value = (p.rate != null && p.rate !== 0) ? p.rate : '';
         termYearsEl.value = p.termYears || '';
-
-        // Блокируем только сумму ПВ (₸) и ставку, ПВ % и срок всегда свободные
-        [dpAmountEl, rateEl].forEach(el => {
-          if (!el) return;
-          if (isCustom) {
-            el.removeAttribute('readonly');
-            el.removeAttribute('disabled');
-            el.style.cursor = '';
-          } else {
-            el.setAttribute('readonly', 'true');
-            el.removeAttribute('disabled');
-            el.style.cursor = 'not-allowed';
-          }
-        });
-
-        // Первоначальный взнос, % — всегда редактируемый
-        if (dpPercentEl) {
-          dpPercentEl.removeAttribute('readonly');
-          dpPercentEl.removeAttribute('disabled');
-          dpPercentEl.style.cursor = '';
-        }
-
-        // Срок кредита — всегда редактируемый
-        if (termYearsEl) {
-          termYearsEl.removeAttribute('readonly');
-          termYearsEl.removeAttribute('disabled');
-          termYearsEl.style.cursor = '';
-        }
 
         productNoteEl.textContent = p.note || '';
         recalc();
@@ -516,14 +464,12 @@
 
         let downPayment;
         if (userEditingAmount && dpAmount > 0) {
-          // Пользователь правит сумму ПВ
           downPayment = dpAmount;
           if (!userEditingPercent) {
             dpPercent = price > 0 ? (downPayment / price * 100) : 0;
             dpPercentEl.value = dpPercent.toFixed(1);
           }
         } else {
-          // По умолчанию считаем от процента
           dpPercent = Math.max(0, Math.min(100, dpPercent));
           downPayment = price * dpPercent / 100;
           dpAmount = downPayment;
@@ -614,9 +560,7 @@
         productEl.addEventListener('change', () => applyProduct(productEl.value));
         [priceEl, dpPercentEl, dpAmountEl, rateEl, termYearsEl, startDateEl].forEach(el => {
           if (!el) return;
-          el.addEventListener('input', () => {
-            recalc();
-          });
+          el.addEventListener('input', recalc);
         });
 
         dpAmountEl && dpAmountEl.addEventListener('focus', () => lastEditedDownPayment = 'amount');
