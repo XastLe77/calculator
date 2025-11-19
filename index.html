@@ -158,7 +158,7 @@
   <div class="wrapper">
     <div class="header">
       <div class="title">Ипотечный калькулятор — полный набор программ</div>
-      <div class="subtitle">Выберите программу, при необходимости скорректируйте все поля и получите график платежей.</div>
+      <div class="subtitle">Выберите программу, скорректируйте сумму, срок и ПВ (не ниже минимального) и получите график платежей.</div>
     </div>
 
     <div class="calculator">
@@ -167,7 +167,7 @@
         <div class="card">
           <div class="card-header">
             <div class="card-title">Исходные данные</div>
-            <div class="card-hint">Программа подставляет стартовые параметры, но вы можете менять любые поля.</div>
+            <div class="card-hint">Программа подставляет стартовые параметры. Ставка фиксирована, ПВ можно только увеличивать.</div>
           </div>
 
           <div class="fields">
@@ -227,7 +227,7 @@
           </div>
 
           <div style="display:flex; justify-content:space-between; align-items:center; margin-top:12px;">
-            <div class="note">Можно менять любые параметры и сразу смотреть, как меняется платёж.</div>
+            <div class="note">Если нужен полностью ручной режим (ставка тоже редактируется) — выберите «Пользовательские».</div>
             <div style="display:flex; gap:8px;">
               <button id="resetBtn" class="btn">Сбросить</button>
             </div>
@@ -324,7 +324,7 @@
 
       // --- Products ---
       const PRODUCTS = {
-        "custom": { name: "Пользовательские", price: 0, downPercent: 20, rate: 18, termYears: 15, note: "Ручной режим — редактируйте все поля." },
+        "custom": { name: "Пользовательские", price: 0, downPercent: 20, rate: 18, termYears: 15, note: "Ручной режим — редактируйте все поля, включая ставку." },
         "biz_ipoteka_altyn": { name: "Бизнес Ипотека (Алтын банк)", price: 25000000, downPercent: 50, rate: 17.00, termYears: 10, note: "Бизнес ипотека — ПВ от 50%." },
         "altyn_onay": { name: "Алтын Банк - Онай", price: 10000000, downPercent: 20, rate: 14.50, termYears: 10, note: "Алтын Банк - Онай" },
         "bck_super": { name: "БЦК — Super ипотека", price: 21382560, downPercent: 20, rate: 14.00, termYears: 10, note: "BCK Super — пример." },
@@ -390,6 +390,9 @@
       dpPercentEl && dpPercentEl.addEventListener('input', () => lastEditedDownPayment = 'percent');
       dpAmountEl && dpAmountEl.addEventListener('input', () => lastEditedDownPayment = 'amount');
 
+      // минимальный ПВ по выбранной программе (в процентах)
+      let currentMinDownPercent = 0;
+
       function populateProductList() {
         productEl.innerHTML = '';
         const optCustom = document.createElement('option');
@@ -405,29 +408,57 @@
           productEl.appendChild(opt);
         });
 
-        if (productEl.querySelector('option[value="altyn_arman"]')) {
-          productEl.value = 'altyn_arman';
-        } else {
-          productEl.value = 'custom';
-        }
+        // по умолчанию — custom
+        productEl.value = 'custom';
       }
 
       function applyProduct(key) {
         const p = PRODUCTS[key] || PRODUCTS.custom;
+        const isCustom = key === 'custom';
 
+        // минимальный ПВ по программе
+        currentMinDownPercent = isCustom
+          ? 0
+          : (typeof p.downPercent === 'number' ? p.downPercent : 0);
+
+        // цена: если уже есть своя, не затираем
         const existingPrice = parseNumber(priceEl);
-        priceEl.value = (existingPrice > 0) ? existingPrice : (p.price || '');
+        priceEl.value = (existingPrice > 0 && !isCustom) ? existingPrice : (p.price || '');
 
+        // ПВ, %
         dpPercentEl.value = p.downPercent != null ? p.downPercent : '';
+        dpPercentEl.min = currentMinDownPercent || 0;
+        dpPercentEl.removeAttribute('readonly');
+        dpPercentEl.removeAttribute('disabled');
+        dpPercentEl.style.cursor = '';
 
+        // сумма ПВ по текущему проценту
         const priceVal = parseNumber(priceEl);
         const computedAmount = (priceVal && p.downPercent != null)
           ? Math.round(priceVal * p.downPercent / 100)
           : '';
         dpAmountEl.value = computedAmount || '';
+        dpAmountEl.removeAttribute('readonly');
+        dpAmountEl.removeAttribute('disabled');
+        dpAmountEl.style.cursor = '';
 
+        // ставка
         rateEl.value = (p.rate != null && p.rate !== 0) ? p.rate : '';
+        if (isCustom) {
+          rateEl.removeAttribute('readonly');
+          rateEl.removeAttribute('disabled');
+          rateEl.style.cursor = '';
+        } else {
+          rateEl.setAttribute('readonly', 'true');
+          rateEl.removeAttribute('disabled');
+          rateEl.style.cursor = 'not-allowed';
+        }
+
+        // срок — всегда можно менять
         termYearsEl.value = p.termYears || '';
+        termYearsEl.removeAttribute('readonly');
+        termYearsEl.removeAttribute('disabled');
+        termYearsEl.style.cursor = '';
 
         productNoteEl.textContent = p.note || '';
         recalc();
@@ -437,8 +468,8 @@
         errorEl.textContent = '';
 
         const price = Math.max(0, parseNumber(priceEl));
-        let dpPercent = Math.max(0, Math.min(100, parseNumber(dpPercentEl)));
-        let dpAmount = Math.max(0, parseNumber(dpAmountEl));
+        let dpPercentRaw = Math.max(0, Math.min(100, parseNumber(dpPercentEl)));
+        let dpAmountRaw = Math.max(0, parseNumber(dpAmountEl));
         const rate = Math.max(0, parseNumber(rateEl));
         const termYears = Math.max(0, parseInt(termYearsEl.value || '0', 10));
 
@@ -451,21 +482,33 @@
           return;
         }
 
+        const minDpPercent = currentMinDownPercent || 0;
+        const minDpAmount = price > 0 ? price * minDpPercent / 100 : 0;
+
         const userEditingAmount = (lastEditedDownPayment === 'amount') && (document.activeElement === dpAmountEl);
         const userEditingPercent = (lastEditedDownPayment === 'percent') && (document.activeElement === dpPercentEl);
 
         let downPayment;
-        if (userEditingAmount && dpAmount > 0) {
-          downPayment = dpAmount;
+
+        if (userEditingAmount && dpAmountRaw > 0) {
+          // Пользователь правит сумму ПВ — но не даём опуститься ниже минимальной суммы
+          downPayment = Math.max(dpAmountRaw, minDpAmount);
+          const effPercent = price > 0 ? (downPayment / price * 100) : 0;
           if (!userEditingPercent) {
-            dpPercent = price > 0 ? (downPayment / price * 100) : 0;
-            dpPercentEl.value = dpPercent.toFixed(1);
+            dpPercentEl.value = effPercent.toFixed(1);
           }
+          dpAmountEl.value = Math.round(downPayment);
         } else {
-          dpPercent = Math.max(0, Math.min(100, dpPercent));
-          downPayment = price * dpPercent / 100;
-          dpAmount = downPayment;
-          if (!userEditingAmount) dpAmountEl.value = Math.round(dpAmount) || '';
+          // Пользователь правит % или ничего — не даём опуститься ниже мин. процента
+          let effPercent = dpPercentRaw;
+          if (effPercent < minDpPercent) effPercent = minDpPercent;
+          if (effPercent > 100) effPercent = 100;
+
+          downPayment = price * effPercent / 100;
+          dpPercentEl.value = effPercent.toFixed(1);
+          if (!userEditingAmount) {
+            dpAmountEl.value = Math.round(downPayment) || '';
+          }
         }
 
         if (downPayment >= price) {
@@ -560,7 +603,8 @@
 
         resetBtn.addEventListener('click', () => {
           populateProductList();
-          productEl.dispatchEvent(new Event('change'));
+          productEl.value = 'custom';
+          applyProduct('custom');
           startDateEl.value = '';
           lastEditedDownPayment = 'percent';
           recalc();
