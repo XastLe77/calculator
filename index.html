@@ -167,7 +167,7 @@
         <div class="card">
           <div class="card-header">
             <div class="card-title">Исходные данные</div>
-            <div class="card-hint">Программа подставляет стартовые параметры. Ставка фиксирована, ПВ можно только увеличивать.</div>
+            <div class="card-hint">Ставка фиксирована по программе (кроме «Пользовательские»). ПВ % можно только повышать.</div>
           </div>
 
           <div class="fields">
@@ -227,7 +227,7 @@
           </div>
 
           <div style="display:flex; justify-content:space-between; align-items:center; margin-top:12px;">
-            <div class="note">Если нужен полностью ручной режим (ставка тоже редактируется) — выберите «Пользовательские».</div>
+            <div class="note">Для полностью ручного режима (ставка тоже редактируется) — выберите «Пользовательские».</div>
             <div style="display:flex; gap:8px;">
               <button id="resetBtn" class="btn">Сбросить</button>
             </div>
@@ -385,12 +385,12 @@
         return rate;
       }
 
-      // состояние: какое поле ПВ редактировали последним
+      // состояние: что редактировали
       let lastEditedDownPayment = null;
-      dpPercentEl && dpPercentEl.addEventListener('input', () => lastEditedDownPayment = 'percent');
-      dpAmountEl && dpAmountEl.addEventListener('input', () => lastEditedDownPayment = 'amount');
+      dpPercentEl && dpPercentEl.addEventListener('input', () => { lastEditedDownPayment = 'percent'; });
+      dpAmountEl && dpAmountEl.addEventListener('input', () => { lastEditedDownPayment = 'amount'; });
 
-      // минимальный ПВ по выбранной программе (в процентах)
+      // минимальный ПВ по текущей программе
       let currentMinDownPercent = 0;
 
       function populateProductList() {
@@ -408,7 +408,6 @@
           productEl.appendChild(opt);
         });
 
-        // по умолчанию — custom
         productEl.value = 'custom';
       }
 
@@ -416,33 +415,20 @@
         const p = PRODUCTS[key] || PRODUCTS.custom;
         const isCustom = key === 'custom';
 
-        // минимальный ПВ по программе
         currentMinDownPercent = isCustom
           ? 0
           : (typeof p.downPercent === 'number' ? p.downPercent : 0);
 
-        // цена: если уже есть своя, не затираем
         const existingPrice = parseNumber(priceEl);
         priceEl.value = (existingPrice > 0 && !isCustom) ? existingPrice : (p.price || '');
 
-        // ПВ, %
         dpPercentEl.value = p.downPercent != null ? p.downPercent : '';
-        dpPercentEl.min = currentMinDownPercent || 0;
-        dpPercentEl.removeAttribute('readonly');
-        dpPercentEl.removeAttribute('disabled');
-        dpPercentEl.style.cursor = '';
-
-        // сумма ПВ по текущему проценту
         const priceVal = parseNumber(priceEl);
         const computedAmount = (priceVal && p.downPercent != null)
           ? Math.round(priceVal * p.downPercent / 100)
           : '';
         dpAmountEl.value = computedAmount || '';
-        dpAmountEl.removeAttribute('readonly');
-        dpAmountEl.removeAttribute('disabled');
-        dpAmountEl.style.cursor = '';
 
-        // ставка
         rateEl.value = (p.rate != null && p.rate !== 0) ? p.rate : '';
         if (isCustom) {
           rateEl.removeAttribute('readonly');
@@ -454,11 +440,18 @@
           rateEl.style.cursor = 'not-allowed';
         }
 
-        // срок — всегда можно менять
         termYearsEl.value = p.termYears || '';
         termYearsEl.removeAttribute('readonly');
         termYearsEl.removeAttribute('disabled');
         termYearsEl.style.cursor = '';
+
+        dpPercentEl.removeAttribute('readonly');
+        dpPercentEl.removeAttribute('disabled');
+        dpPercentEl.style.cursor = '';
+
+        dpAmountEl.removeAttribute('readonly');
+        dpAmountEl.removeAttribute('disabled');
+        dpAmountEl.style.cursor = '';
 
         productNoteEl.textContent = p.note || '';
         recalc();
@@ -485,28 +478,53 @@
         const minDpPercent = currentMinDownPercent || 0;
         const minDpAmount = price > 0 ? price * minDpPercent / 100 : 0;
 
-        const userEditingAmount = (lastEditedDownPayment === 'amount') && (document.activeElement === dpAmountEl);
-        const userEditingPercent = (lastEditedDownPayment === 'percent') && (document.activeElement === dpPercentEl);
+        const activeEl = document.activeElement;
+        const editingPercent = activeEl === dpPercentEl;
+        const editingAmount = activeEl === dpAmountEl;
 
         let downPayment;
+        let effPercent;
 
-        if (userEditingAmount && dpAmountRaw > 0) {
-          // Пользователь правит сумму ПВ — но не даём опуститься ниже минимальной суммы
-          downPayment = Math.max(dpAmountRaw, minDpAmount);
-          const effPercent = price > 0 ? (downPayment / price * 100) : 0;
-          if (!userEditingPercent) {
+        if (editingAmount) {
+          // пользователь правит сумму ПВ: не даём опуститься ниже минимальной суммы
+          if (dpAmountRaw <= 0) {
+            downPayment = minDpAmount;
+          } else {
+            downPayment = Math.max(dpAmountRaw, minDpAmount);
+          }
+          effPercent = price > 0 ? (downPayment / price * 100) : 0;
+
+          // обновляем % только если поле процента сейчас не в фокусе
+          if (!editingPercent) {
             dpPercentEl.value = effPercent.toFixed(1);
           }
-          dpAmountEl.value = Math.round(downPayment);
+          // сумму обновляем, если она меньше минимума
+          if (dpAmountRaw !== downPayment) {
+            dpAmountEl.value = Math.round(downPayment);
+          }
         } else {
-          // Пользователь правит % или ничего — не даём опуститься ниже мин. процента
-          let effPercent = dpPercentRaw;
-          if (effPercent < minDpPercent) effPercent = minDpPercent;
-          if (effPercent > 100) effPercent = 100;
+          // пользователь правит %, или ничего — считаем через %
+          let percentForCalc = dpPercentRaw;
 
-          downPayment = price * effPercent / 100;
-          dpPercentEl.value = effPercent.toFixed(1);
-          if (!userEditingAmount) {
+          // если поле пустое и не в фокусе — ставим минимум
+          if (!editingPercent && (isNaN(percentForCalc) || percentForCalc === 0) && minDpPercent > 0) {
+            percentForCalc = minDpPercent;
+          }
+
+          // для расчётов используем не ниже минимума
+          if (percentForCalc < minDpPercent) percentForCalc = minDpPercent;
+          if (percentForCalc > 100) percentForCalc = 100;
+
+          downPayment = price * percentForCalc / 100;
+          effPercent = percentForCalc;
+
+          // поле процента НЕ трогаем, если пользователь сейчас печатает
+          if (!editingPercent) {
+            dpPercentEl.value = effPercent.toFixed(1);
+          }
+
+          // сумму ПВ меняем, только если пользователь не редактирует сумму
+          if (!editingAmount) {
             dpAmountEl.value = Math.round(downPayment) || '';
           }
         }
@@ -593,13 +611,31 @@
 
       function attachHandlers() {
         productEl.addEventListener('change', () => applyProduct(productEl.value));
-        [priceEl, dpPercentEl, dpAmountEl, rateEl, termYearsEl, startDateEl].forEach(el => {
+
+        [priceEl, dpAmountEl, rateEl, termYearsEl, startDateEl].forEach(el => {
           if (!el) return;
           el.addEventListener('input', recalc);
         });
 
-        dpAmountEl && dpAmountEl.addEventListener('focus', () => lastEditedDownPayment = 'amount');
-        dpPercentEl && dpPercentEl.addEventListener('focus', () => lastEditedDownPayment = 'percent');
+        // ПВ %: при вводе не трогаем поле, только считаем; при blur — жёстко приводим к минимуму
+        dpPercentEl.addEventListener('input', () => {
+          lastEditedDownPayment = 'percent';
+          recalc();
+        });
+        dpPercentEl.addEventListener('blur', () => {
+          // после выхода из поля приводим к минимуму
+          const price = Math.max(0, parseNumber(priceEl));
+          const minDpPercent = currentMinDownPercent || 0;
+          let val = parseNumber(dpPercentEl);
+          if (isNaN(val) || val === 0) val = minDpPercent || 0;
+          if (val < minDpPercent) val = minDpPercent;
+          if (val > 100) val = 100;
+          dpPercentEl.value = val.toFixed(1);
+          recalc();
+        });
+
+        dpAmountEl && dpAmountEl.addEventListener('focus', () => { lastEditedDownPayment = 'amount'; });
+        dpPercentEl && dpPercentEl.addEventListener('focus', () => { lastEditedDownPayment = 'percent'; });
 
         resetBtn.addEventListener('click', () => {
           populateProductList();
